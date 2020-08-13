@@ -27,7 +27,7 @@ var getAddends = (subs) => {
 };
 
 var sum = (items) => items.reduce((total, curr) => total + curr.total, 0)
-var summary = (subs) => {
+WooData.buildSummary = (subs) => {
   const contributors = getAddends(subs)
   const total = sum(contributors)
 
@@ -47,6 +47,6 @@ var summary = (subs) => {
 WooData.getSummary = async () =>{
   let response = await woo.getAsync("subscriptions")
   const subscriptions = JSON.parse(response.body);
-  const data = summary(subscriptions)
+  const data = WooData.buildSummary(subscriptions)
   return data
 }

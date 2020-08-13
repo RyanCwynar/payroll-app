@@ -9,7 +9,15 @@ const NodeCache = require("node-cache");
 const cache = new NodeCache({ stdTTL: 10000 });
 
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded());
 let weeklyHours = {};
+const getTotalWeeklyHours = ()=>{
+  let sum = 0
+  for(const key in weeklyHours){
+    sum += weeklyHours[key]
+  }
+  return sum
+}
 // Routes
 app.get("/", (req, res) => {
   res.json({ message: "We are here" });
@@ -26,30 +34,13 @@ app.all("/summary", async (req, res) => {
 });
 
 app.post("/test", (req, res) => {
-  res.json({
-    blocks: [
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: "*It's 80 degrees right now.*",
-        },
-      },
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: "Partly cloudy today and tomorrow",
-        },
-      },
-    ],
-  });
+  let { user_name, text } = req.body;
+  weeklyHours[user_name] = Number(text);
+  res.json({ weeklyHours, totalHours: getTotalWeeklyHours() });
 });
 
-app.get("/hours/:person/:hours", (req, res) => {
-  let { person, hours } = req.params;
-  weeklyHours[person] = Number(hours);
-  res.json(weeklyHours);
+app.post("/total-hours", (req, res) => {
+  res.json({ totalHours: getTotalWeeklyHours() });
 });
 
 // Error handler
