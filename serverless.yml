@@ -1,0 +1,8 @@
+org: baconfuel
+app: payroll-app
+service: payroll-app
+component: express
+name: fob-payroll-app
+
+inputs:
+  src: ./
