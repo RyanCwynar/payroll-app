@@ -52,7 +52,7 @@ app.post("/", async (req, res) => {
   };
 
   const inputs = req.body;
-  if (inputs.token !== process.env.SLACK_TOKEN) {
+  if (!inputs || !inputs.token || inputs.token !== process.env.SLACK_TOKEN) {
     res.send("Invalid token");
     return;
   }
@@ -127,11 +127,7 @@ app.post("/", async (req, res) => {
       res.sendBlocks(result);
       return;
     case "ceiling":
-      res.sendBlocks(
-        section(
-          `There are ${summary.ceiling_hours} available from FoB this week`
-        )
-      );
+      res.sendBlocks(section(`There are ${summary.ceiling_hours} available from FoB this week`));
       return;
     case "my-payout":
       let hours = Number(weeklyHours[user_name]);
