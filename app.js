@@ -116,7 +116,7 @@ app.post("/", async (req, res) => {
       let result = [];
       for (const contributor of summary.contributors) {
         let copy = JSON.parse(JSON.stringify(contributor))
-        if(user_name !== "ryancwynar")
+        if(user_name !== process.env.ADMIN_USERNAME)
           delete copy.total
         copy.weekly_hours = Math.round(ceiling * copy.percent)
         delete copy.percent
