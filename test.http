@@ -1,4 +1,4 @@
-@host = http://localhost:3301/
+@host = http://localhost:{{$dotenv PORT}}/
 ###
 POST {{host}}
 Content-Type: application/json
