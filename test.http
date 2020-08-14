@@ -1,0 +1,11 @@
+@host = http://localhost:3301/
+###
+POST {{host}}
+Content-Type: application/json
+
+{
+  "token": "{{$dotenv SLACK_TOKEN}}",
+  "text": "ceiling",
+  "channel_name" : "payroll",
+  "user_name" : "ryancwynar"
+}
