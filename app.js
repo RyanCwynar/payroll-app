@@ -5,20 +5,36 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 const WooData = require("./woo-data");
+const Sheet = require('./sheets.js');
 const NodeCache = require("node-cache");
 const { get } = require("lodash");
-const cache = new NodeCache({ stdTTL: 10000 });
+const cache = new NodeCache({ stdTTL: 60 * 60 * 24 });
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded());
-let weeklyHours = {};
-const getTotalWeeklyHours = () => {
-  let sum = 0;
-  for (const key in weeklyHours) {
-    sum += weeklyHours[key];
+
+const userIdMap = {
+  U015RC0VA67: {
+    name: "Ryan Humphries",
+    row: 4
+  },
+  UAGA7ERLM: {
+    name: "Nick Matos",
+    row: 2
+  },
+  U39LD2HA6: {
+    name: "Ryan Cwynar",
+    row: 3
+  },
+  U8NBNFBHB: {
+    name: "Nick Benik",
+    row: 1
+  },
+  U0JL9488J: {
+    name: "Ben Saint Denis",
+    row: 0
   }
-  return sum;
-};
+}
 
 const section = (text) => {
   return {
@@ -29,6 +45,16 @@ const section = (text) => {
     },
   };
 };
+
+const getCoord = (key) => {
+  switch(key){
+    case "summary":
+      return [0, 3]
+    case "ceiling":
+      return [0,4]
+  }
+  return [10,10]
+}
 
 const printObj = (obj) => {
   let result = [];
@@ -60,7 +86,7 @@ app.post("/", async (req, res) => {
     res.send("Only use me in the #payroll channel");
     return;
   }
-  const { user_name, text } = inputs;
+  const { user_name, text, user_id } = inputs;
   let args = text.split(" ").filter(Boolean);
 
   if (args.length == 0) {
@@ -69,54 +95,58 @@ app.post("/", async (req, res) => {
   }
 
   const action = args[0];
+  const row = userIdMap[user_id].row
+
   // Quick actions
   let hours;
   switch (action) {
     case "hours":
       hours = Number(get(args, "[1]", 0));
-      weeklyHours[user_name] = hours;
-      res.sendBlocks(
-        section(
-          `You're currently reporting ${weeklyHours[user_name]} hours this week.`
-        )
-      );
+      await Sheet.update(row, hours)
+      res.sendBlocks( section( `You're currently reporting ${hours} hours this week.`));
       return;
     case "add-hours":
       hours = Number(get(args, "[1]", 0));
-      if (weeklyHours[user_name]) hours += weeklyHours[user_name];
-      weeklyHours[user_name] = hours;
-      res.sendBlocks(
-        section(
-          `You're currently reporting ${weeklyHours[user_name]} hours this week.`
-        )
-      );
-      return;
-    case "current-hours":
-      res.sendBlocks(
-        section(
-          `Total actual hours reported this week ${getTotalWeeklyHours()}`
-        )
-      );
-      return;
+      let current = await Sheet.get(row)
+      if (current)
+        hours += current;
+      await Sheet.update(row, hours)
+      res.sendBlocks( section( `You're currently reporting ${hours} hours this week.`));
+      return
     default:
   }
 
-  // actions requiring a summary on hand
+  if (action == "current-hours") {
+    // actions requiring a summary on hand
+    if (!cache.has("current-hours")) {
+      res.sendBlocks(section("*Compiling summary* Send this command again in a second"));
+      const total = await Sheet.getTotal()
+      cache.set("current-hours", total);
+      return
+    }
+
+    res.sendBlocks( section( `Total actual hours reported this week ${cache.get("current-hours")}`));
+    return
+  }
+  let summary = false
+
   if (!cache.has("summary")) {
-    res.sendBlocks(section("*Compiling summary* check back in a minute"));
+    res.sendBlocks(section("*Compiling summary* Send this command again in a second"));
     const summary = await WooData.getSummary();
+    await Sheet.updateCell(0,10, JSON.stringify(summary))
     cache.set("summary", summary);
     return
   }
 
-  const summary = cache.get("summary");
+  summary = cache.get("summary")
   const ceiling = summary.ceiling_hours
+
   switch (action) {
     case "contributors":
       let result = [];
       for (const contributor of summary.contributors) {
         let copy = JSON.parse(JSON.stringify(contributor))
-        if(user_name !== process.env.ADMIN_USERNAME)
+        if (user_name !== process.env.ADMIN_USERNAME)
           delete copy.total
         copy.weekly_hours = Math.round(ceiling * copy.percent)
         delete copy.percent
@@ -127,22 +157,24 @@ app.post("/", async (req, res) => {
       res.sendBlocks(result);
       return;
     case "ceiling":
-      res.sendBlocks(section(`There are ${summary.ceiling_hours} available from FoB this week`));
+      res.sendBlocks(section(`There are ${ceiling} available from FoB this week`));
       return;
     case "my-payout":
-      let hours = Number(weeklyHours[user_name]);
+      hours = await Sheet.get(row)
       if (!hours) {
         res.sendBlocks(section("You didn't report any hours yet"));
-        return;
+        return
       }
-      const availableHours = summary ? summary.ceiling_hours : 0;
-      const actualHours = getTotalWeeklyHours();
+
+      const availableHours = ceiling || 0;
+      const actualHours = cache.has("current-hours") ? cache.get("current-hours") : await Sheet.getTotal()
 
       if (availableHours < actualHours) {
         hours = (hours / actualHours) * availableHours;
       }
+
       const payout = Number(hours * 50).toFixed(2);
-      res.sendBlocks(section(`Projected payout: $${payout}`));
+      res.sendBlocks(section(`Projected payout: $${ payout }`));
       return;
     default:
   }
