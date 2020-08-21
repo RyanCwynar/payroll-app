@@ -134,7 +134,7 @@ app.post("/", async (req, res) => {
       res.sendBlocks(section("*Compiling summary* Send this command again in a second"));
       const data = await WooData.getSummary();
       cache.set("summary", data);
-      await Sheet.updateCell(0,10, JSON.stringify(summary))
+      await Sheet.updateCell(0,10, JSON.stringify(data))
       await Sheet.updateCell(1,10, NOW)
       return
     }
