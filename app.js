@@ -130,7 +130,7 @@ app.post("/", async (req, res) => {
 
   if (!cache.has("summary")) {
     const lastUpdate = await Sheet.getCell(1,10)
-    if(lastUpdate <  (NOW - THREE_DAYS)){
+    if(Number(lastUpdate) <  (NOW - THREE_DAYS)){
       res.sendBlocks(section("*Compiling summary* Send this command again in a second"));
       const data = await WooData.getSummary();
       cache.set("summary", data);
