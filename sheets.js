@@ -25,6 +25,7 @@ let sheet
 
 Sheets.updateCell  = async (row = 0, col = 0, value = 0) => {
   try {
+    await sheet.loadCells()
     let cell = sheet.getCell(row, col)
     cell.value = value
     await sheet.saveUpdatedCells()
@@ -36,6 +37,14 @@ Sheets.updateCell  = async (row = 0, col = 0, value = 0) => {
 
 Sheets.get = (row = 0, col = 1) => {
   try {
+    return sheet.getCell(row, col).value
+  } catch (err) {
+    console.error(err)
+  }
+}
+Sheets.getCell = async (row = 0, col = 1) => {
+  try {
+    await sheet.loadCells()
     return sheet.getCell(row, col).value
   } catch (err) {
     console.error(err)

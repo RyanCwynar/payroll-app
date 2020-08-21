@@ -125,17 +125,23 @@ app.post("/", async (req, res) => {
     default:
   }
 
-  let summary = false
+  const NOW = (new Date()).getTime()
+  const THREE_DAYS = 60 * 60 * 24 * 3 * 1000
 
   if (!cache.has("summary")) {
-    res.sendBlocks(section("*Compiling summary* Send this command again in a second"));
-    const summary = await WooData.getSummary();
-    await Sheet.updateCell(0,10, JSON.stringify(summary))
-    cache.set("summary", summary);
-    return
+    const lastUpdate = await Sheet.getCell(1,10)
+    if(lastUpdate <  (NOW - THREE_DAYS)){
+      res.sendBlocks(section("*Compiling summary* Send this command again in a second"));
+      const data = await WooData.getSummary();
+      cache.set("summary", data);
+      await Sheet.updateCell(0,10, JSON.stringify(summary))
+      await Sheet.updateCell(1,10, NOW)
+      return
+    }
+    cache.set("summary", JSON.parse(Sheet.get(0,10)));
   }
 
-  summary = cache.get("summary")
+  const summary = cache.get("summary")
   const ceiling = summary.ceiling_hours
 
   switch (action) {
