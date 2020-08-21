@@ -106,7 +106,7 @@ app.post("/", async (req, res) => {
         hours = await Sheets.get(row)
       }
       else{
-        await Sheet.update(row, hours)
+        await Sheet.update(row, Number(hours))
       }
       res.sendBlocks( section( `You're currently reporting ${hours} hours this week.`));
       return;
