@@ -103,7 +103,7 @@ app.post("/", async (req, res) => {
     case "hours":
       hours = get(args, "[1]", false);
       if(hours === false){
-        hours = Sheets.get(row)
+        hours = Sheet.get(row)
       }
       else{
         await Sheet.update(row, Number(hours))
