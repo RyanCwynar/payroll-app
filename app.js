@@ -113,21 +113,13 @@ app.post("/", async (req, res) => {
       await Sheet.update(row, hours)
       res.sendBlocks( section( `You're currently reporting ${hours} hours this week.`));
       return
+    case "current-hours":
+      const total = await Sheet.getTotal()
+      res.sendBlocks( section( `Total actual hours reported this week ${total}`));
+      return
     default:
   }
 
-  if (action == "current-hours") {
-    // actions requiring a summary on hand
-    if (!cache.has("current-hours")) {
-      res.sendBlocks(section("*Compiling summary* Send this command again in a second"));
-      const total = await Sheet.getTotal()
-      cache.set("current-hours", total);
-      return
-    }
-
-    res.sendBlocks( section( `Total actual hours reported this week ${cache.get("current-hours")}`));
-    return
-  }
   let summary = false
 
   if (!cache.has("summary")) {
