@@ -101,7 +101,7 @@ app.post("/", async (req, res) => {
   let hours;
   switch (action) {
     case "hours":
-      hours = Number(get(args, "[1]", false));
+      hours = get(args, "[1]", false);
       if(hours === false){
         hours = await Sheets.get(row)
       }
