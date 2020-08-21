@@ -101,8 +101,13 @@ app.post("/", async (req, res) => {
   let hours;
   switch (action) {
     case "hours":
-      hours = Number(get(args, "[1]", 0));
-      await Sheet.update(row, hours)
+      hours = Number(get(args, "[1]", false));
+      if(hours === false){
+        hours = await Sheets.get(row)
+      }
+      else{
+        await Sheet.update(row, hours)
+      }
       res.sendBlocks( section( `You're currently reporting ${hours} hours this week.`));
       return;
     case "add-hours":
